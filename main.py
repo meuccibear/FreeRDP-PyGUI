@@ -1,6 +1,6 @@
 import subprocess
 import json
-import os
+import os, re
 
 import gi
 
@@ -10,6 +10,7 @@ from gi.repository import Gtk, Gdk, Gio
 
 class RDPServ:
     def __init__(self):
+        self.index: int = 0
         self.name: str = "server name"
         self.address: str = "example.com"
         self.port: int = 3389
@@ -17,12 +18,15 @@ class RDPServ:
         self.pwd: str = ""
         self.width: int = 1920
         self.height: int = 1080
+        self.remarks: str = ""
 
-    def get_liststore_item(self) -> (str, str):
-        return self.name, f"{self.address}:{self.port}"
+    def get_liststore_item(self) -> (int, str, str, str):
+        return self.index, self.name, self.user, self.remarks
 
     def get_command(self) -> tuple[str, str, str, str, str, str]:
-        return ("xfreerdp", f"/v:{self.address}", f"/port:{self.port}", f"/u:{self.user}",
+        # print ("./WIN-X.exe", f"/v:{self.address}", f"/port:{self.port}", f"/u:{self.user}",
+        #       f"/p:{self.pwd}", f"/w:{self.width}", f"/h:{self.height}")
+        return ("F:/wfreerdp.exe", f"/v:{self.address}",f"/u:{self.user}",
                 f"/p:{self.pwd}", f"/size:{self.width}x{self.height}")
 
     def set_from_dict(self, data: dict):
@@ -47,6 +51,9 @@ class RDPServ:
         height = data.get("height")
         if height is not None:
             self.height = height
+        remarks = data.get("remarks")
+        if remarks is not None:
+            self.remarks = remarks
 
     def get_dict(self):
         return {
@@ -56,7 +63,8 @@ class RDPServ:
             "user": self.user,
             "pwd": self.pwd,
             "width": self.width,
-            "height": self.height
+            "height": self.height,
+            "remarks": self.remarks
         }
 
 class MainApplication(Gtk.Application):
@@ -82,81 +90,90 @@ class ServEditWindow(Gtk.Window):
         self.set_resizable(False)
 
         # grid layout
-        self.grid = Gtk.Grid()
+        self.grid = Gtk.Grid(column_homogeneous=True,
+                             column_spacing=10,
+                             row_spacing=10)
         self.add(self.grid)
 
         # labels
         name_label = Gtk.Label(label="Name:")
-        host_label = Gtk.Label(label="Host:")
-        port_label = Gtk.Label(label="Port:")
-        user_label = Gtk.Label(label="User:")
-        pwd_label = Gtk.Label(label="Password:")
-        screensize_label = Gtk.Label(label="Screen Size:")
-        x_label = Gtk.Label(label=" x ")
+        remarks_label = Gtk.Label(label="影像别名:")
+        # host_label = Gtk.Label(label="Host:")
+        # port_label = Gtk.Label(label="Port:")
+        # user_label = Gtk.Label(label="User:")
+        # pwd_label = Gtk.Label(label="Password:")
+        # screensize_label = Gtk.Label(label="Screen Size:")
+        # x_label = Gtk.Label(label=" x ")
 
         # entries
-        self.name_entry = Gtk.Entry()
-        self.host_entry = Gtk.Entry()
-        self.port_entry = Gtk.Entry()
-        self.user_entry = Gtk.Entry()
-        self.pwd_entry = Gtk.Entry()
-        self.width_entry = Gtk.Entry()
-        self.height_entry = Gtk.Entry()
-        self.pwd_entry.set_visibility(False)
+        # self.name_entry = Gtk.Entry()
+        self.remarks_entry = Gtk.Entry()
+        # self.host_entry = Gtk.Entry()
+        # self.port_entry = Gtk.Entry()
+        # self.user_entry = Gtk.Entry()
+        # self.pwd_entry = Gtk.Entry()
+        # self.width_entry = Gtk.Entry()
+        # self.height_entry = Gtk.Entry()
+        # self.pwd_entry.set_visibility(False)
 
         # buttons
-        self.confirm_button = Gtk.Button(label="Confirm")
-        self.cancel_button = Gtk.Button(label="Cancel")
+        self.confirm_button = Gtk.Button(label="确定")
+        self.cancel_button = Gtk.Button(label="取消")
         # signals
         self.confirm_button.connect("clicked", self.on_confirm_button_clicked)
         self.cancel_button.connect("clicked", self.on_cancel_button_clicked)
 
         # add to grid layout
-        self.grid.attach(name_label,       0, 0, 1, 1)
-        self.grid.attach(host_label,       0, 1, 1, 1)
-        self.grid.attach(port_label,       0, 2, 1, 1)
-        self.grid.attach(user_label,       0, 3, 1, 1)
-        self.grid.attach(pwd_label,        0, 4, 1, 1)
-        self.grid.attach(screensize_label, 0, 5, 1, 1)
+        # self.grid.attach(name_label,       0, 0, 1, 1)
+        self.grid.attach(remarks_label,       0, 0, 1, 1)
+        # self.grid.attach(host_label,       0, 1, 1, 1)
+        # self.grid.attach(port_label,       0, 2, 1, 1)
+        # self.grid.attach(user_label,       0, 3, 1, 1)
+        # self.grid.attach(pwd_label,        0, 4, 1, 1)
+        # self.grid.attach(screensize_label, 0, 5, 1, 1)
 
-        self.grid.attach(self.name_entry, 1, 0, 3, 1)
-        self.grid.attach(self.host_entry, 1, 1, 3, 1)
-        self.grid.attach(self.port_entry, 1, 2, 3, 1)
-        self.grid.attach(self.user_entry, 1, 3, 3, 1)
-        self.grid.attach(self.pwd_entry,  1, 4, 3, 1)
+        # self.grid.attach(self.name_entry, 1, 0, 3, 1)
+        self.grid.attach(self.remarks_entry, 1, 0, 3, 1)
+        # self.grid.attach(self.host_entry, 1, 1, 3, 1)
+        # self.grid.attach(self.port_entry, 1, 2, 3, 1)
+        # self.grid.attach(self.user_entry, 1, 3, 3, 1)
+        # self.grid.attach(self.pwd_entry,  1, 4, 3, 1)
 
-        self.grid.attach(self.width_entry,  1, 5, 1, 1)
-        self.grid.attach(x_label,           2, 5, 1, 1)
-        self.grid.attach(self.height_entry, 3, 5, 1, 1)
+        # self.grid.attach(self.width_entry,  1, 5, 1, 1)
+        # self.grid.attach(x_label,           2, 5, 1, 1)
+        # self.grid.attach(self.height_entry, 3, 5, 1, 1)
 
-        self.grid.attach(self.confirm_button, 1, 6, 1, 1)
-        self.grid.attach(self.cancel_button,  3, 6, 1, 1)
+        self.grid.attach(self.confirm_button, 1, 4, 1, 1)
+        self.grid.attach(self.cancel_button,  3, 4, 1, 1)
 
         # set entry text
-        self.name_entry.set_text(serv.name)
-        self.host_entry.set_text(serv.address)
-        self.port_entry.set_text(str(serv.port))
-        self.user_entry.set_text(serv.user)
-        self.pwd_entry.set_text(serv.pwd)
-        self.width_entry.set_text(str(serv.width))
-        self.height_entry.set_text(str(serv.height))
+        # self.name_entry.set_text(serv.name)
+        self.remarks_entry.set_text(serv.remarks)
+        # self.host_entry.set_text(serv.address)
+        # self.port_entry.set_text(str(serv.port))
+        # self.user_entry.set_text(serv.user)
+        # self.pwd_entry.set_text(serv.pwd)
+        # self.width_entry.set_text(str(serv.width))
+        # self.height_entry.set_text(str(serv.height))
 
     def on_cancel_button_clicked(self, button: Gtk.Button):
         self.destroy()
 
     def on_confirm_button_clicked(self, button: Gtk.Button):
         try:
-            self.edited_serv.name = self.name_entry.get_text()
-            self.edited_serv.address = self.host_entry.get_text()
-            self.edited_serv.port = int(self.port_entry.get_text())
-            self.edited_serv.user = self.user_entry.get_text()
-            self.edited_serv.pwd = self.pwd_entry.get_text()
-            self.edited_serv.width = int(self.width_entry.get_text())
-            self.edited_serv.height = int(self.height_entry.get_text())
+            # self.edited_serv.name = self.name_entry.get_text()
+            self.edited_serv.remarks = self.remarks_entry.get_text()
+            # self.edited_serv.address = self.host_entry.get_text()
+            # self.edited_serv.port = int(self.port_entry.get_text())
+            # self.edited_serv.user = self.user_entry.get_text()
+            # self.edited_serv.pwd = self.pwd_entry.get_text()
+            # self.edited_serv.width = int(self.width_entry.get_text())
+            # self.edited_serv.height = int(self.height_entry.get_text())
 
             if not(
-                len(self.edited_serv.name) and len(self.edited_serv.address) and
-                len(self.edited_serv.user) and len(self.edited_serv.pwd)
+                len(self.edited_serv.remarks)
+                # len(self.edited_serv.name) and len(self.edited_serv.address) and
+                # len(self.edited_serv.user) and len(self.edited_serv.pwd)
             ):
                 msg_dialog = Gtk.MessageDialog(
                     transient_for=self,
@@ -191,61 +208,76 @@ class MainWindow(Gtk.ApplicationWindow):
         # server list, type: RDPServ
         self.serv_list: list[RDPServ] = list()
         self.load_servers()
-
-        super().__init__(title="RDP Servers", application=app)
+        # 智谱远程视频管理平台
+        super().__init__(title="智谱远程视频管理平台", application=app)
         # window size
         self.set_default_size(800, 400)
 
         # header bar
         self.hb = Gtk.HeaderBar()
         self.hb.set_show_close_button(True)
-        self.hb.props.title = "RDP Servers"
+        self.hb.props.title = "智谱远程视频管理平台"
         self.set_titlebar(self.hb)
 
         # add_button with icon
-        self.add_button = Gtk.Button()
-        icon = Gio.ThemedIcon(name="document-new-symbolic")
-        image = Gtk.Image.new_from_gicon(icon, Gtk.IconSize.BUTTON)
-        self.add_button.add(image)
-
-        # add add_button to header bar
-        self.hb.pack_start(self.add_button)
+        # self.add_button = Gtk.Button()
+        # icon = Gio.ThemedIcon(name="document-new-symbolic")
+        # image = Gtk.Image.new_from_gicon(icon, Gtk.IconSize.BUTTON)
+        # self.add_button.add(image)
+        #
+        # # add add_button to header bar
+        # self.hb.pack_start(self.add_button)
 
         # model
-        self.serv_liststore = Gtk.ListStore(str, str)
+        self.serv_liststore = Gtk.ListStore(int, str, str, str)
         self.set_liststore_from_serv_list()
 
         # view
         self.treeview = Gtk.TreeView(model=self.serv_liststore)
 
+        renderer_serv_index = Gtk.CellRendererText()
+        renderer_serv_index.set_fixed_size(60, 50)
+        column_text_serv_index = Gtk.TreeViewColumn("ID", renderer_serv_index, text=0)
+        self.treeview.append_column(column_text_serv_index)
+
         # name column
         renderer_serv_name = Gtk.CellRendererText()
-        renderer_serv_name.set_fixed_size(200, 50)
-        column_text_serv_name = Gtk.TreeViewColumn("Name", renderer_serv_name, text=0)
+        renderer_serv_name.set_fixed_size(100, 50)
+        column_text_serv_name = Gtk.TreeViewColumn("服务器编号", renderer_serv_name, text=1)
         self.treeview.append_column(column_text_serv_name)
 
         # server address column
         renderer_serv_addr = Gtk.CellRendererText()
-        renderer_serv_addr.set_fixed_size(600, 50)
-        column_text_serv_addr = Gtk.TreeViewColumn("Address", renderer_serv_addr, text=1)
+        renderer_serv_addr.set_fixed_size(200, 50)
+        column_text_serv_addr = Gtk.TreeViewColumn("窗口编号", renderer_serv_addr, text=2)
         self.treeview.append_column(column_text_serv_addr)
+
+        renderer_serv_remarks = Gtk.CellRendererText()
+        renderer_serv_remarks.set_fixed_size(200, 50)
+        column_text_serv_remarks = Gtk.TreeViewColumn("影像别名", renderer_serv_remarks, text=3)
+        self.treeview.append_column(column_text_serv_remarks)
+
+        # renderer_serv_host = Gtk.CellRendererText()
+        # renderer_serv_host.set_fixed_size(600, 50)
+        # column_text_serv_host = Gtk.TreeViewColumn("host", renderer_serv_host, text=3)
+        # self.treeview.append_column(column_text_serv_host)
 
         # menu
         self.menu = Gtk.Menu()
         # Edit menu item
-        edit_menuitem = Gtk.MenuItem(label="Edit")
+        edit_menuitem = Gtk.MenuItem(label="修改")
         self.menu.append(edit_menuitem)
         # Delete menu item
-        del_menuitem = Gtk.MenuItem(label="Delete")
-        self.menu.append(del_menuitem)
+        # del_menuitem = Gtk.MenuItem(label="Delete")
+        # self.menu.append(del_menuitem)
         self.menu.show_all()
 
         # signals
-        self.add_button.connect("clicked", self.on_new_button_press)
+        # self.add_button.connect("clicked", self.on_new_button_press)
         self.treeview.connect("row-activated", self.on_treeview_row_activated)
         self.treeview.connect("button-press-event", self.on_treeview_button_press)
         edit_menuitem.connect("activate", self.on_edit_menuitem_activate)
-        del_menuitem.connect("activate", self.on_del_menuitem_activate)
+        # del_menuitem.connect("activate", self.on_del_menuitem_activate)
 
         # add treeview to main window
         self.add(self.treeview)
@@ -258,8 +290,24 @@ class MainWindow(Gtk.ApplicationWindow):
     def on_treeview_row_activated(self, treeview: Gtk.TreeView, path: Gtk.TreePath, column: Gtk.TreeViewColumn):
         index = path.get_indices()[0]
         # self.close()
+        module_name = 'rtsp-simple-server.exe'
+        self.start_python_module(module_name)
         subprocess.Popen(self.serv_list[index].get_command())
         # exit(0)
+
+    def start_python_module(self, module_name):
+        # 查看所有運行的python程序
+        python_full = os.popen("wmic process where name='rtsp-simple-server.exe' list full").readlines()
+        # 正則查找python程序是否在已運行的python程序中
+        com = re.compile(module_name)
+        ret = com.search(''.join(python_full))
+        # 發現程序未運行，執行啟動命令
+        if not ret:
+            os.popen("rtsp-simple-server.exe")
+            # print("python 程序啟動完成")
+        # 發現程序已經在運行中，不執行啟動命令
+        # else:
+        #     print("python 程序已啟動")
 
     def on_treeview_button_press(self, treeview: Gtk.TreeView, event: Gdk.EventButton):
         # right click
@@ -286,7 +334,7 @@ class MainWindow(Gtk.ApplicationWindow):
         path, column = self.treeview.get_cursor()
         index = path.get_indices()[0]
         serv = self.serv_list[index]
-        serv_edit_window = ServEditWindow(title="Edit", serv=serv)
+        serv_edit_window = ServEditWindow(title="修改", serv=serv)
         serv_edit_window.connect("destroy", self.on_edit_window_destroy, index)
         serv_edit_window.show_all()
 
@@ -307,9 +355,12 @@ class MainWindow(Gtk.ApplicationWindow):
         if os.path.exists('serv.json'):
             with open('serv.json', 'r', encoding='utf-8') as fp:
                 servs_dict = json.load(fp)
-                for serv_dict in servs_dict:
+                for index in range(len(servs_dict)):
+                # for serv_dict in servs_dict:
                     serv = RDPServ()
-                    serv.set_from_dict(serv_dict)
+                    # serv.set_from_dict(serv_dict)
+                    serv.set_from_dict(servs_dict[index])
+                    serv.index = index + 1
                     self.serv_list.append(serv)
 
     def save_servers(self):
