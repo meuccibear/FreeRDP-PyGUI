@@ -26,7 +26,7 @@ class RDPServ:
     def get_command(self) -> tuple[str, str, str, str, str, str]:
         # print ("./WIN-X.exe", f"/v:{self.address}", f"/port:{self.port}", f"/u:{self.user}",
         #       f"/p:{self.pwd}", f"/w:{self.width}", f"/h:{self.height}")
-        return ("F:/wfreerdp.exe", f"/v:{self.address}",f"/u:{self.user}",
+        return ("./WIN-X.exe", f"/v:{self.address}",f"/u:{self.user}",
                 f"/p:{self.pwd}", f"/size:{self.width}x{self.height}")
 
     def set_from_dict(self, data: dict):
