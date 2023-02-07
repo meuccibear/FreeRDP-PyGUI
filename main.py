@@ -267,6 +267,14 @@ class MainWindow(Gtk.ApplicationWindow):
         # Edit menu item
         edit_menuitem = Gtk.MenuItem(label="修改")
         self.menu.append(edit_menuitem)
+
+        open_file_menuitem = Gtk.MenuItem(label="打开录像路径")
+        self.menu.append(open_file_menuitem)
+
+        # Push flow
+        restart_push_flow_file_menuitem = Gtk.MenuItem(label="重启推流")
+        self.menu.append(restart_push_flow_file_menuitem)
+
         # Delete menu item
         # del_menuitem = Gtk.MenuItem(label="Delete")
         # self.menu.append(del_menuitem)
@@ -276,6 +284,7 @@ class MainWindow(Gtk.ApplicationWindow):
         # self.add_button.connect("clicked", self.on_new_button_press)
         self.treeview.connect("row-activated", self.on_treeview_row_activated)
         self.treeview.connect("button-press-event", self.on_treeview_button_press)
+        edit_menuitem.connect("activate", self.on_edit_menuitem_activate)
         edit_menuitem.connect("activate", self.on_edit_menuitem_activate)
         # del_menuitem.connect("activate", self.on_del_menuitem_activate)
 
