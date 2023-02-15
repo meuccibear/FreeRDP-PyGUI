@@ -3,7 +3,7 @@
 # General parameters
 
 # Sets the verbosity of the program; available values are "error", "warn", "info", "debug".
-logLevel: info
+logLevel: debug
 # Destinations of log messages; available values are "stdout", "file" and "syslog".
 logDestinations: [stdout]
 # If "file" is in logDestinations, this is the file which will receive the logs.
@@ -189,6 +189,7 @@ paths:
     # * rpiCamera -> the stream is provided by a Raspberry Pi Camera
     source: publisher
 
+
     # If the source is an RTSP or RTSPS URL, this is the protocol that will be used to
     # pull the stream. available values are "automatic", "udp", "multicast", "tcp".
     sourceProtocol: automatic
@@ -285,17 +286,6 @@ paths:
     # readers connected and this amount of time has passed.
     runOnDemandCloseAfter: 10s
 
-    # Command to run when the stream is ready to be read, whether it is
-    # published by a client or pulled from a server / camera.
-    # This is terminated with SIGINT when the stream is not ready anymore.
-    # The following environment variables are available:
-    # * RTSP_PATH: path name
-    # * RTSP_PORT: server port
-    # * G1, G2, ...: regular expression groups, if path name is
-    #   a regular expression.
-    runOnReady:
-    # Restart the command if it exits suddenly.
-    runOnReadyRestart: no
 
     # Command to run when a clients starts reading.
     # This is terminated with SIGINT when a client stops reading.
@@ -307,3 +297,6 @@ paths:
     runOnRead:
     # Restart the command if it exits suddenly.
     runOnReadRestart: no
+
+    runOnReady: ffmpeg.exe -i rtsp://127.0.0.1:$RTSP_PORT/$RTSP_PATH -c copy -f segment -strftime 1 -segment_time 1800 -segment_format mpegts  d:\\dist\\$RTSP_PATH\\$RTSP_PATH-saved_%Y-%m-%d_%H-%M-%S.mp4
+    runOnReadyRestart: yes

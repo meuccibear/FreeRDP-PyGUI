@@ -1,7 +1,7 @@
 import subprocess
 import json
 import os, re
-
+import time
 import gi
 
 gi.require_version("Gtk", "3.0")
@@ -218,7 +218,7 @@ class MainWindow(Gtk.ApplicationWindow):
         self.hb.set_show_close_button(True)
         self.hb.props.title = "智谱远程视频管理平台"
         self.set_titlebar(self.hb)
-
+        self.module_name = 'zprtserver.exe'
         # add_button with icon
         # self.add_button = Gtk.Button()
         # icon = Gio.ThemedIcon(name="document-new-symbolic")
@@ -285,7 +285,8 @@ class MainWindow(Gtk.ApplicationWindow):
         self.treeview.connect("row-activated", self.on_treeview_row_activated)
         self.treeview.connect("button-press-event", self.on_treeview_button_press)
         edit_menuitem.connect("activate", self.on_edit_menuitem_activate)
-        edit_menuitem.connect("activate", self.on_edit_menuitem_activate)
+        restart_push_flow_file_menuitem.connect("activate", self.on_restart)
+        open_file_menuitem.connect("activate", self.on_open)
         # del_menuitem.connect("activate", self.on_del_menuitem_activate)
 
         # add treeview to main window
@@ -299,24 +300,75 @@ class MainWindow(Gtk.ApplicationWindow):
     def on_treeview_row_activated(self, treeview: Gtk.TreeView, path: Gtk.TreePath, column: Gtk.TreeViewColumn):
         index = path.get_indices()[0]
         # self.close()
-        module_name = 'rtsp-simple-server.exe'
-        self.start_python_module(module_name)
+
+        self.start_python_module()
         subprocess.Popen(self.serv_list[index].get_command())
         # exit(0)
 
-    def start_python_module(self, module_name):
+    def start_python_module(self):
         # 查看所有運行的python程序
-        python_full = os.popen("wmic process where name='rtsp-simple-server.exe' list full").readlines()
+        python_full = os.popen("wmic process where name='%s' list full" % self.module_name).readlines()
         # 正則查找python程序是否在已運行的python程序中
-        com = re.compile(module_name)
+        com = re.compile(self.module_name)
         ret = com.search(''.join(python_full))
         # 發現程序未運行，執行啟動命令
         if not ret:
-            os.popen("rtsp-simple-server.exe")
+            os.popen(self.module_name)
             # print("python 程序啟動完成")
         # 發現程序已經在運行中，不執行啟動命令
         # else:
         #     print("python 程序已啟動")
+
+    def on_restart(self, menuitem: Gtk.MenuItem):
+        # path, column = self.treeview.get_cursor()
+        # index = path.get_indices()[0]
+        # serv = self.serv_list[index]
+        # serv_edit_window = ServEditWindow(title="修改", serv=serv)
+        # serv_edit_window.connect("destroy", self.on_edit_window_destroy, index)
+        # serv_edit_window.show_all()
+        os.system('taskkill /f /im %s' % self.module_name)
+        time.sleep(3)
+        self.start_python_module()
+
+    def on_open(self, menuitem: Gtk.MenuItem):
+        lines = self.get_json('rtsp-simple-server.yml')
+        for line in lines:
+            # print('line:' + line)
+            # print(line.find('ffmpeg.exe'))
+            for command in line.split('\r\n'):
+                if command.find(' runOnReady:') > -1:
+                    if command.find('ffmpeg.exe') > -1:
+                        parameters = command.split( )
+                        filePath = parameters[len(parameters)-1]
+                        print(filePath)
+                        # , beg=(filePath.find('\\') + 1)
+                        index = filePath.find('\\') + 2
+                        folderPath = filePath[:filePath.find('\\', index)]
+                        print(folderPath)
+                        if os.path.exists(folderPath):
+                            os.startfile(folderPath)
+                        else:
+                            dialog = Gtk.MessageDialog(self, 0, Gtk.MessageType.INFO, Gtk.ButtonsType.OK, "警告")
+                            dialog.format_secondary_text("%s 该目录不存在！" % folderPath)
+                            dialog.run()
+                            dialog.destroy()
+                    else:
+                        dialog = Gtk.MessageDialog(self, 0, Gtk.MessageType.INFO, Gtk.ButtonsType.OK, "警告")
+                        dialog.format_secondary_text("没有配置文件保存路径！")
+                        dialog.run()
+                        dialog.destroy()
+        # if 配置文件
+        # 配置 打开
+            # if 文件
+            # 存在 打开
+            #   不存在 提示
+        #   未配置
+
+    def get_json(self, path):
+        if os.path.exists(path):
+            text = open(path,  encoding='utf-8')
+            lines = text.readlines()
+            return lines
 
     def on_treeview_button_press(self, treeview: Gtk.TreeView, event: Gdk.EventButton):
         # right click
