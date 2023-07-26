@@ -464,7 +464,7 @@ class MainWindow(Gtk.ApplicationWindow):
         self.start_python_module()
 
     def on_open(self, menuitem: Gtk.MenuItem):
-        lines = self.get_json('rtsp-simple-server.yml')
+        lines = self.get_json('dist/rtsp-simple-server.yml')
         for line in lines:
             # print('line:' + line)
             # print(line.find('ffmpeg.exe'))
