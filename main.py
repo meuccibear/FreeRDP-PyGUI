@@ -3,74 +3,80 @@ import json
 import os, re
 import time
 import gi
-import PySimpleGUI as sg 
+import PySimpleGUI as sg
+import hashlib
 
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk, Gdk, Gio
 
 class Login:
     def __init__(self, MainApplication):
-        # 创建窗口并设置默认界面为登录界面 
+        # 创建窗口并设置默认界面为登录界面
         window = self.create_login_window()
 
         self.serv_list: list[Account] = list()
         self.load_servers()
 
-        # 创建事件循环 
-        while True: 
+        # 创建事件循环
+        while True:
             event, values = window.read()
             if event == sg.WIN_CLOSED:
                 break
-            # 处理登录界面的事件 
-            if event == '登录': 
+            # 处理登录界面的事件
+            if event == '登录':
                 for index in range(len(self.serv_list)):
-                    # 进行登录验证 
-                    if values['username'] == self.serv_list[index].get_dict()['username'] and values['password'] == self.serv_list[index].get_dict()['passwd']: 
-                        # 登录成功，关闭登录窗口，打开主界面窗口 
-                        window.close() 
+                    new_password = self.encryption(self.serv_list[index].get_dict()['passwd'])
+
+                    # 进行登录验证
+                    if values['username'] == self.serv_list[index].get_dict()['username'] and values['password'] == new_password:
+                        # 登录成功，关闭登录窗口，打开主界面窗口
+                        window.close()
                         MainApplication.start()
                         return
                         # window = self.create_main_window()
-                    else: 
-                        # 登录失败，弹出提示框 
-                        sg.popup('用户名或密码错误！') 
+                    else:
+                        # 登录失败，弹出提示框
+                        sg.popup('用户名或密码错误！')
                     if index + 1 < len(self.serv_list):
-                        sg.popup('没找到该用户名！') 
-            # 处理注册界面的事件 
-            elif event == '注册账号': 
-                # 关闭登录窗口，打开注册窗口 
+                        sg.popup('没找到该用户名！')
+            # 处理注册界面的事件
+            elif event == '注册账号':
+                # 关闭登录窗口，打开注册窗口
                 window.close()
                 window = self.create_register_window()
-            # 处理注册界面的事件 
-            elif event == '注册': 
-                # 进行注册操作 
-                if values['password'] == values['confirm_password']: 
+            # 处理注册界面的事件
+            elif event == '注册':
+                # 进行注册操作
+                if values['password'] == values['confirm_password']:
                     newAccount = Account()
-                    newAccount.name=values['username']
-                    newAccount.passwd=values['password']
+                    newAccount.name = values['username']
+                    newAccount.passwd = self.encryption(values['password'])
                     self.serv_list.append(newAccount)
                     self.save_servers()
-                    # 注册成功，弹出提示框 
+                    # 注册成功，弹出提示框
                     sg.popup('注册成功！')
-                    # 关闭注册窗口，打开登录窗口 
+                    # 关闭注册窗口，打开登录窗口
                     window.close()
                     # window.show()
                     window = self.create_login_window()
-                else: 
-                    # 注册失败，弹出提示框 
-                    sg.popup('两次输入的密码不一致！') 
-            # 处理主界面的事件 
-            elif event == '退出': 
-                # 关闭主界面窗口，退出程序 
+                else:
+                    # 注册失败，弹出提示框
+                    sg.popup('两次输入的密码不一致！')
+            # 处理主界面的事件
+            elif event == '退出':
+                # 关闭主界面窗口，退出程序
                 window.close()
-                break 
+                break
         # 退出事件循环，程序结束
 
-    def check(self):
-        
+    def encryption(self, password):
+        hash = hashlib.md5('python'.encode('utf-8'))
+        hash.update(password.encode("utf-8"))
+        # b0758ad1aad20530044668775f389922
+        return hash.hexdigest()
 
     def create_login_window(self):
-        # 定义登录界面的布局 
+        # 定义登录界面的布局
         login_layout = [
             [sg.Text('账号：'), sg.Input(key='username')],
             [sg.Text('密码：'), sg.Input(key='password', password_char='*')],
@@ -79,13 +85,13 @@ class Login:
         return sg.Window("智谱远程视频管理平台", login_layout)
 
     def create_register_window(self):
-        # 定义注册界面的布局 
-        register_layout = [ [sg.Text('账号：'), sg.Input(key='username')], [sg.Text('密码：'), sg.Input(key='password', password_char='*')], [sg.Text('确认密码：'), sg.Input(key='confirm_password', password_char='*')], [sg.Button('注册')] ] 
+        # 定义注册界面的布局
+        register_layout = [ [sg.Text('账号：'), sg.Input(key='username')], [sg.Text('密码：'), sg.Input(key='password', password_char='*')], [sg.Text('确认密码：'), sg.Input(key='confirm_password', password_char='*')], [sg.Button('注册')] ]
         return sg.Window('PySimpleGUI注册系统', register_layout)
 
     def create_main_window(self):
         # 定义主界面的布局
-        main_layout = [ [sg.Text('欢迎使用PySimpleGUI')], [sg.Button('退出')] ] 
+        main_layout = [ [sg.Text('欢迎使用PySimpleGUI')], [sg.Button('退出')] ]
         return sg.Window('智谱远程视频管理平台', main_layout)
 
     def load_servers(self):
@@ -204,7 +210,7 @@ class MainApplication(Gtk.Application):
     def on_activate(self, app: Gtk.Application):
         self.app = app
         Login(self)
-    
+
     def start(self):
         window = MainWindow(self.app)
         window.show_all()
